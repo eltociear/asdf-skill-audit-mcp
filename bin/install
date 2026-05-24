@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Install a specific version of skill-audit-mcp.
+# Downloads the GitHub release tarball, extracts it, drops a small
+# shell wrapper at $ASDF_INSTALL_PATH/bin/skill-audit-mcp.
+set -euo pipefail
+
+[[ -z "${ASDF_INSTALL_TYPE:-}" ]] && { echo "ASDF_INSTALL_TYPE required" >&2; exit 1; }
+[[ -z "${ASDF_INSTALL_VERSION:-}" ]] && { echo "ASDF_INSTALL_VERSION required" >&2; exit 1; }
+[[ -z "${ASDF_INSTALL_PATH:-}" ]] && { echo "ASDF_INSTALL_PATH required" >&2; exit 1; }
+
+REPO="https://github.com/eltociear/skill-audit-mcp"
+TAG="v${ASDF_INSTALL_VERSION}"
+TARBALL_URL="${REPO}/archive/refs/tags/${TAG}.tar.gz"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+echo "==> downloading ${TARBALL_URL}"
+curl --fail --silent --show-error --location "$TARBALL_URL" -o "${TMP}/src.tar.gz"
+
+mkdir -p "$ASDF_INSTALL_PATH"
+tar -xzf "${TMP}/src.tar.gz" --strip-components=1 -C "$ASDF_INSTALL_PATH"
+
+mkdir -p "${ASDF_INSTALL_PATH}/bin"
+cat > "${ASDF_INSTALL_PATH}/bin/skill-audit-mcp" <<'WRAPPER'
+#!/usr/bin/env bash
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "${HERE}/../server.py" "$@"
+WRAPPER
+chmod +x "${ASDF_INSTALL_PATH}/bin/skill-audit-mcp"
+
+echo "==> installed skill-audit-mcp ${ASDF_INSTALL_VERSION} at ${ASDF_INSTALL_PATH}"

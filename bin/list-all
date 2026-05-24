@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# List all installable versions of skill-audit-mcp.
+# Pulls release tags from the upstream GitHub repo.
+set -euo pipefail
+
+REPO="${SKILL_AUDIT_MCP_REPO:-https://github.com/eltociear/skill-audit-mcp.git}"
+
+git ls-remote --tags --refs "$REPO" \
+  | awk -F/ '{print $NF}' \
+  | sed 's/^v//' \
+  | sort -V \
+  | tr '\n' ' '
+echo
